@@ -1,0 +1,130 @@
+---
+title: "R Notebook"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Step 1- Collecting the data
+
+```{r}  
+bt <- read.csv("Bitcoin.csv")
+
+
+```
+
+Step 2- Exploring the data
+```{r}
+str(bt)
+```
+
+```{r}
+summary(bt$Price)
+
+```
+
+```{r}
+hist(bt$Price)
+```
+
+```{r}
+cor(bt[c("marketcap", "exchangeVolume", "generatedCoins", "GDPC1","Price")])
+```
+
+```{r}
+pairs(bt[c("marketcap", "exchangeVolume", "generatedCoins", "GDPC1","Price")])
+```
+
+```{r}
+install.packages("psych")
+
+library(psych)
+
+pairs.panels(bt[c("marketcap", "exchangeVolume", "generatedCoins", "GDPC1","Price")])
+
+```
+Step 3: Training Model on the Data
+```{r}
+indx <- sample(1:nrow(bt), as.integer(0.9*nrow(bt)))
+indx
+launch_train <- bt[indx,]
+launch_test <- bt[-indx,]
+
+```
+
+```{r}
+ins_model <- lm(Price ~ marketcap + exchangeVolume + generatedCoins + GDPC1, data = launch_train)
+ins_Predicted <- predict(ins_model, launch_test)
+ins_model <- lm(Price ~ marketcap + exchangeVolume + generatedCoins + GDPC1, data = launch_train)
+ins_model
+
+
+```
+Step 4-Evaluating model performance
+```{r}
+summary(ins_model)
+```
+Step 5- Improving model performance
+```{r}
+ins_model2 <- lm(Price ~ marketcap + exchangeVolume + generatedCoins + GDPC1 + GDPC1^2 + exchangeVolume*fees, data = launch_train)
+summary(ins_model2)
+```
+checking the model accuracy after removing one parameter showing highest linear relationship with price i.e marketcap
+```{r}
+ins_model <- lm(Price ~  exchangeVolume + generatedCoins + GDPC1, data = launch_train)
+ins_Predicted <- predict(ins_model, launch_test)
+ins_model <- lm(Price ~  exchangeVolume + generatedCoins + GDPC1, data = launch_train)
+ins_model
+summary(ins_model)
+
+```
+
+```{r}
+ins_model2 <- lm(Price ~  exchangeVolume + generatedCoins + GDPC1 + GDPC1^2 +  exchangeVolume*fees, data = launch_train)
+summary(ins_model2)
+```
+
+
+Note: By using regression trees algorithm, we are checking if it is giving the same output as the linear regression result.
+```{r}
+library(RWeka)
+library(rpart)
+m.rpart <- rpart(Price ~ marketcap + exchangeVolume + generatedCoins + GDPC1, data = launch_train)
+m.rpart
+library(rpart.plot)
+rpart.plot(m.rpart, digits = 3)
+rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE,
+           type = 3, extra = 101)
+p.rpart <- predict(m.rpart, launch_test)
+summary(p.rpart)
+MAE <- function(actual, predicted) {
+  mean(abs(actual - predicted))
+}
+
+MAE(p.rpart, launch_test$Price)
+mean(launch_train$Price)
+MAE(920.496, launch_test$Price)
+```
+
+```{r}
+library(RWeka)
+Bitcoin_model <- M5P(Price ~ marketcap + exchangeVolume + generatedCoins + GDPC1, data = launch_train)
+bitcoin_predicted <-predict(Bitcoin_model, launch_test)
+m.m5p <- M5P(Price ~ marketcap + exchangeVolume + generatedCoins + GDPC1, data = launch_train)
+m.m5p
+summary(m.m5p)
+p.m5p <- predict(m.m5p, launch_test)
+summary(p.m5p)
+cor(p.m5p, launch_test$Price)
+MAE(launch_test$Price, p.m5p)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
